@@ -11,8 +11,8 @@ void swap(char* text, int ii, int jj);
 }
 */
 
-void
-reverse(char* text, int ii, int jj)
+void reverse(char* text, int ii, int jj);
+/*
 {
     if (ii >= jj) {
         return;
@@ -21,11 +21,12 @@ reverse(char* text, int ii, int jj)
     swap(text, ii, jj);
     reverse(text, ii + 1, jj - 1);
 }
+*/
 
-char ltoa_buf[24];
+// char ltoa_buf[24];
 
-char*
-ltoa(long xx, int* nn)
+char* ltoa(long xx, int* nn);
+/*
 {
     if (xx < 1) {
         ltoa_buf[0] = '0';
@@ -48,6 +49,7 @@ ltoa(long xx, int* nn)
 
     return ltoa_buf;
 }
+*/
 
 int
 main(int argc, char* argv[])
