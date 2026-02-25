@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free List Memory Allocator Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        
+        .controls {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: inline-block;
+            width: 120px;
+            font-weight: bold;
+        }
+        
+        input, button {
+            padding: 8px;
+            margin: 5px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        
+        button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        #free-list-btn {
+            background-color: #2196F3;
+        }
+        
+        #free-list-btn:hover {
+            background-color: #1976D2;
+        }
+        
+        #reset-btn {
+            background-color: #f44336;
+        }
+        
+        #reset-btn:hover {
+            background-color: #d32f2f;
+        }
+        
+        .visualization {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            min-height: 400px;
+            overflow-x: auto;
+        }
+        
+        .stats {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            margin: 10px 0;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 0 15px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+            border: 1px solid #333;
+        }
+        
+        .allocated {
+            background-color: #FF6B6B;
+        }
+        
+        .free {
+            background-color: #4ECDC4;
+        }
+        
+        .header {
+            background-color: #1A535C;
+            color: white;
+        }
+        
+        .page-container {
+            display: inline-block;
+            margin: 10px;
+            vertical-align: top;
+        }
+        
+        .page {
+            border: 2px solid #333;
+            position: relative;
+            background-color: #f9f9f9;
+            width: 300px;
+            height: 400px;
+        }
+        
+        .page-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 30px;
+            background-color: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border-bottom: 1px solid #333;
+        }
+        
+        .block {
+            border: 1px solid #333;
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+            overflow: hidden;
+        }
+        
+        .arrow {
+            stroke: #333;
+            stroke-width: 2;
+            fill: none;
+            marker-end: url(#arrowhead);
+        }
+        
+        .free-list-line {
+            stroke: #FF6B6B;
+            stroke-width: 3;
+            stroke-dasharray: 5,5;
+        }
+        
+        .error {
+            color: #f44336;
+            font-weight: bold;
+        }
+        
+        .success {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        
+        #message-area {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Free List Memory Allocator Demo</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="malloc-size">Malloc Size:</label>
+                <input type="number" id="malloc-size" placeholder="Enter size in bytes" min="1">
+                <button id="malloc-btn">Malloc</button>
+            </div>
+            
+            <div class="control-group">
+                <label for="free-ptr">Free Pointer:</label>
+                <input type="text" id="free-ptr" placeholder="Enter pointer address">
+                <button id="free-btn">Free</button>
+            </div>
+            
+            <div class="control-group">
+                <label for="realloc-ptr">Realloc Ptr:</label>
+                <input type="text" id="realloc-ptr" placeholder="Enter pointer address">
+                <label for="realloc-size">New Size:</label>
+                <input type="number" id="realloc-size" placeholder="Enter new size" min="1">
+                <button id="realloc-btn">Realloc</button>
+            </div>
+            
+            <div class="control-group">
+                <button id="reset-btn">Reset Allocator</button>
+            </div>
+            
+            <div id="message-area"></div>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color allocated"></div>
+                <span>Allocated Block</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color free"></div>
+                <span>Free Block</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color header"></div>
+                <span>Header (Size Info)</span>
+            </div>
+        </div>
+        
+        <div class="visualization">
+            <h2>Memory Visualization</h2>
+            <div id="free-list-display">
+                <h3>Free List</h3>
+                <svg id="free-list-svg" width="100%" height="100"></svg>
+            </div>
+            <div id="memory-container"></div>
+            <svg id="arrows-svg" width="100%" height="300"></svg>
+        </div>
+        
+        <div class="stats">
+            <h2>Statistics</h2>
+            <div id="stats-content">
+                <p>Total Memory: <span id="total-memory">0</span> bytes</p>
+                <p>Allocated Memory: <span id="allocated-memory">0</span> bytes</p>
+                <p>Free Memory: <span id="free-memory">0</span> bytes</p>
+                <p>Fragmentation: <span id="fragmentation">0</span>%</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="allocator.js"></script>
+    <script>
+        // Initialize the allocator when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof initAllocator !== 'undefined') {
+                initAllocator();
+            } else {
+                console.error('Allocator script not loaded');
+            }
+        });
+    </script>
+</body>
+</html>
