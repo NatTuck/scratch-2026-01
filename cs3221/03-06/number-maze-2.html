@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number Maze Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .form-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .form-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        label {
+            white-space: nowrap;
+        }
+        input {
+            padding: 5px;
+            width: 80px;
+        }
+        #generateBtn, #startWalkBtn, #stopWalkBtn {
+            padding: 8px 20px;
+            cursor: pointer;
+        }
+        #stopWalkBtn {
+            display: none;
+        }
+        #mazeContainer {
+            margin-top: 20px;
+        }
+        table {
+            border-collapse: collapse;
+        }
+        td {
+            border: 1px solid #333;
+            padding: 10px 15px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Number Maze Generator</h1>
+    
+    <div class="form-container">
+        <div class="form-group">
+            <label for="rows">Rows (N):</label>
+            <input type="number" id="rows" value="5" min="1">
+        </div>
+        
+        <div class="form-group">
+            <label for="cols">Columns (M):</label>
+            <input type="number" id="cols" value="5" min="1">
+        </div>
+        
+        <button id="generateBtn">Generate Maze</button>
+        <button id="startWalkBtn">Start Random Walk</button>
+        <button id="stopWalkBtn">Stop Random Walk</button>
+        <button id="startSolvingBtn">Start Solving</button>
+    </div>
+    
+    <div id="mazeContainer"></div>
+
+    <script>
+        let currentMaze = null;
+        let walkInterval = null;
+        let walkPath = [];
+        let walkCurrent = null;
+        
+        document.getElementById('generateBtn').addEventListener('click', function() {
+            const rows = parseInt(document.getElementById('rows').value);
+            const cols = parseInt(document.getElementById('cols').value);
+            const container = document.getElementById('mazeContainer');
+            
+            if (rows < 1 || cols < 1 || isNaN(rows) || isNaN(cols)) {
+                container.innerHTML = '<p>Please enter valid positive numbers for rows and columns.</p>';
+                return;
+            }
+            
+            if (walkInterval) {
+                clearInterval(walkInterval);
+                walkInterval = null;
+            }
+            
+            currentMaze = [];
+            let html = '<table>';
+            for (let i = 0; i < rows; i++) {
+                currentMaze[i] = [];
+                html += '<tr>';
+                for (let j = 0; j < cols; j++) {
+                    const value = Math.floor(Math.random() * 9) + 1;
+                    currentMaze[i][j] = value;
+                    html += '<td id="cell-' + i + '-' + j + '">' + value + '</td>';
+                }
+                html += '</tr>';
+            }
+            html += '</table>';
+            
+            container.innerHTML = html;
+        });
+        
+        function getMazeAsGraph() {
+            if (!currentMaze) {
+                return null;
+            }
+            
+            const graph = new Map();
+            const rows = currentMaze.length;
+            const cols = currentMaze[0].length;
+            
+            const directions = [
+                { dr: -1, dc: 0 },
+                { dr: 1, dc: 0 },
+                { dr: 0, dc: -1 },
+                { dr: 0, dc: 1 }
+            ];
+            
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const vertexName = r + ',' + c;
+                    const value = currentMaze[r][c];
+                    const neighbors = [];
+                    
+                    for (const { dr, dc } of directions) {
+                        const nr = r + dr * value;
+                        const nc = c + dc * value;
+                        
+                        if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+                            neighbors.push(nr + ',' + nc);
+                        }
+                    }
+                    
+                    graph.set(vertexName, { vv: value, ns: neighbors });
+                }
+            }
+            
+            return graph;
+        }
+        
+        function startRandomWalk() {
+            if (!currentMaze) {
+                alert('Please generate a maze first.');
+                return;
+            }
+            
+            if (walkInterval) {
+                clearInterval(walkInterval);
+            }
+            
+            const graph = getMazeAsGraph();
+            walkPath = [];
+            walkCurrent = '0,0';
+            
+            document.querySelectorAll('td').forEach(td => {
+                td.style.backgroundColor = '';
+            });
+            
+            document.getElementById('startWalkBtn').style.display = 'none';
+            document.getElementById('stopWalkBtn').style.display = 'inline-block';
+            
+            function step() {
+                if (!walkCurrent) return;
+                
+                if (walkPath.length > 0) {
+                    const [pr, pc] = walkPath[walkPath.length - 1].split(',').map(Number);
+                    document.getElementById('cell-' + pr + '-' + pc).style.backgroundColor = 'lightblue';
+                }
+                
+                const [r, c] = walkCurrent.split(',').map(Number);
+                document.getElementById('cell-' + r + '-' + c).style.backgroundColor = 'lightgreen';
+                
+                walkPath.push(walkCurrent);
+                
+                const cellData = graph.get(walkCurrent);
+                if (cellData.ns.length === 0) {
+                    clearInterval(walkInterval);
+                    walkInterval = null;
+                    document.getElementById('startWalkBtn').style.display = 'inline-block';
+                    document.getElementById('stopWalkBtn').style.display = 'none';
+                    return;
+                }
+                
+                const nextVertex = cellData.ns[Math.floor(Math.random() * cellData.ns.length)];
+                walkCurrent = nextVertex;
+            }
+            
+            step();
+            walkInterval = setInterval(step, 1000);
+        }
+        
+        function stopRandomWalk() {
+            if (walkInterval) {
+                clearInterval(walkInterval);
+                walkInterval = null;
+            }
+            document.getElementById('startWalkBtn').style.display = 'inline-block';
+            document.getElementById('stopWalkBtn').style.display = 'none';
+        }
+        
+        document.getElementById('startWalkBtn').addEventListener('click', startRandomWalk);
+        document.getElementById('stopWalkBtn').addEventListener('click', stopRandomWalk);
+
+        let solvePath = [];
+        let solveCurrent = [];
+        
+        function startSolving() {
+            console.log("Start solving");
+            if (!currentMaze) {
+                alert('Please generate a maze first.');
+                return;
+            }
+            
+            const graph = getMazeAsGraph();
+            solvePath = [];
+            solveCurrent = '0,0';
+
+            function step() {
+                if (solvePath.length > 0) {
+                    const [pr, pc] = walkPath[walkPath.length - 1].split(',').map(Number);
+                    document.getElementById('cell-' + pr + '-' + pc).style.backgroundColor = 'lightblue';
+                }
+                
+                const [r, c] = solveCurrent.split(',').map(Number);
+                document.getElementById('cell-' + r + '-' + c).style.backgroundColor = 'lightgreen';
+                
+                solvePath.push(solveCurrent);
+                
+                const cellData = graph.get(solveCurrent);
+                if (cellData.ns.length === 0) {
+                    clearInterval(solveInterval);
+                    solveInterval = null;
+                    document.getElementById('startsolveBtn').style.display = 'inline-block';
+                    document.getElementById('stopsolveBtn').style.display = 'none';
+                    return;
+                }
+                
+                const nextVertex = cellData.ns[Math.floor(Math.random() * cellData.ns.length)];
+                solveCurrent = nextVertex;
+            }
+          
+            step();
+            setInterval(step, 1000);
+        }
+        
+        document.getElementById('startSolvingBtn').addEventListener('click', startSolving);
+    </script>
+</body>
+</html>
