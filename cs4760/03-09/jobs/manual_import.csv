@@ -1,0 +1,12 @@
+# Manual Job Import Template
+#
+# Use this file to manually add jobs from sources that can't be scraped automatically.
+#
+# Format each job as:
+# Source|Agency|Title|Location|Link|Date Found
+#
+# Example:
+# LinkedIn|LLNL|Computational Scientist|Livermore, CA|https://...|2026-03-09
+# Indeed|NASA|Software Engineer|Houston, TX|https://...|2026-03-09
+
+--- ADD JOBS BELOW THIS LINE ---
