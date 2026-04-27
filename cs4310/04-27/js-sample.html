@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+  <head>
+    <title>JS Demo</title>
+    <script>
+      function foo() {
+        let p1 = document.getElementById('demo');
+        p1.innerHTML = "Hello, foo";
+      }
+
+      function bar() {
+        window.setTimeout(function() {
+          let p1 = document.getElementById('demo');
+          p1.innerHTML = "Hello, bar";
+        }, 2000);
+      }
+
+      function doFib(xx) {
+          let p1 = document.getElementById('demo');
+          p1.innerHTML = "fib(" + xx + ") = " + fib(xx);
+      }
+
+      function fib(xx) {
+        if (xx < 2) {
+          return 1;
+        }
+        else {
+          return fib(xx-1) + fib(xx-2);
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <p id="demo">Hello, Page</p>
+    <p><button onclick="foo();">Foo</button></p>
+    <p><button onclick="bar();">Bar</button></p>
+    <p><button onclick="doFib(40);">Fib 40</button></p>
+  </body>
+</html>
